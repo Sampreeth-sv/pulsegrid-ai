@@ -1,0 +1,6 @@
+gate_id,occupancy,capacity,queue_length,volunteers,risk_score,entry_velocity,exit_velocity,security_staff,medical_staff,avg_wait_time
+A,3200,16500,420,12,28,145,0,8,2,4.2
+B,5800,16500,890,8,62,198,0,6,1,8.7
+C,2100,16500,180,10,15,87,0,7,2,2.1
+D,7200,16500,1240,6,87,312,0,5,1,14.3
+E,820,4500,45,8,12,52,0,12,3,1.5
