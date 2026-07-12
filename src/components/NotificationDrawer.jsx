@@ -1,129 +1,116 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bell, CheckCircle, AlertTriangle, Heart, Shield, Bus, Users, Radio, Info, Settings } from 'lucide-react';
+import { X, Bell, CheckCircle, AlertTriangle, Heart, Users, Bus, Shield, Leaf, Zap, Info } from 'lucide-react';
 import useStore from '../context/store';
-import notificationService from '../services/notificationService';
+import { Badge } from './ui';
 
-const iconMap = {
-  INCIDENT: AlertTriangle, MEDICAL: Heart, SECURITY: Shield,
-  CROWD: Users, TRANSPORT: Bus, VOLUNTEER: CheckCircle,
-  SUCCESS: CheckCircle, INFO: Info, WARNING: AlertTriangle,
-  BROADCAST: Radio, SYSTEM: Settings,
+const TYPE_CONFIG = {
+  MEDICAL: { icon: Heart, color: '#FF4D6D', bg: 'bg-danger/10', border: 'border-danger/25' },
+  SECURITY: { icon: Shield, color: '#FF4D6D', bg: 'bg-danger/10', border: 'border-danger/20' },
+  CROWD: { icon: Users, color: '#FFC857', bg: 'bg-warning/10', border: 'border-warning/20' },
+  TRANSPORT: { icon: Bus, color: '#56CCF2', bg: 'bg-info/10', border: 'border-info/20' },
+  SUCCESS: { icon: CheckCircle, color: '#00E5A8', bg: 'bg-accent/10', border: 'border-accent/20' },
+  WARNING: { icon: AlertTriangle, color: '#FFC857', bg: 'bg-warning/10', border: 'border-warning/20' },
+  INFO: { icon: Info, color: '#56CCF2', bg: 'bg-info/10', border: 'border-info/20' },
+  SUSTAINABILITY: { icon: Leaf, color: '#00E5A8', bg: 'bg-accent/10', border: 'border-accent/20' },
+  POWER: { icon: Zap, color: '#FFC857', bg: 'bg-warning/10', border: 'border-warning/20' },
 };
 
-const priorityStyles = {
-  CRITICAL: 'border-l-danger text-danger',
-  HIGH: 'border-l-warning text-warning',
-  NORMAL: 'border-l-info text-info',
-  LOW: 'border-l-slate-600 text-slate-400',
-};
-
-const iconColors = {
-  CRITICAL: 'text-danger', HIGH: 'text-warning', NORMAL: 'text-info', LOW: 'text-slate-400',
-};
-
-function timeAgo(ts) {
+const getConfig = (type) => TYPE_CONFIG[type] || TYPE_CONFIG.INFO;
+const timeAgo = (ts) => {
   const diff = Math.floor((Date.now() - new Date(ts)) / 1000);
   if (diff < 60) return `${diff}s ago`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   return `${Math.floor(diff / 3600)}h ago`;
-}
+};
 
 export default function NotificationDrawer() {
   const { notificationDrawerOpen, setNotificationDrawerOpen, notifications, dismissNotification } = useStore();
-
-  const handleMarkAll = () => {
-    notificationService.markAllRead();
-  };
+  const unread = notifications.filter((n) => !n.read).length;
 
   return (
     <AnimatePresence>
       {notificationDrawerOpen && (
         <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
-            onClick={() => setNotificationDrawerOpen(false)}
-          />
+            onClick={() => setNotificationDrawerOpen(false)} />
           <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-96 bg-primary-100 border-l border-white/10 z-50 flex flex-col"
+            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+            className="fixed right-0 top-0 h-full w-80 z-50 flex flex-col bg-primary-100/95 backdrop-blur-xl border-l border-white/8"
           >
-            <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Bell size={18} className="text-accent" />
-                <span className="font-display font-bold text-white">Alerts & Notifications</span>
-                {notifications.filter((n) => !n.read).length > 0 && (
-                  <span className="px-2 py-0.5 rounded-full bg-danger/20 text-danger text-xs font-bold">
-                    {notifications.filter((n) => !n.read).length}
-                  </span>
-                )}
+            {/* Header */}
+            <div className="p-4 border-b border-white/8 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-accent/15 border border-accent/25 flex items-center justify-center">
+                  <Bell size={15} className="text-accent" />
+                </div>
+                <div>
+                  <div className="font-bold text-white text-sm">Notifications</div>
+                  {unread > 0 && <div className="text-xs text-accent">{unread} unread</div>}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleMarkAll}
-                  className="text-xs text-accent hover:text-accent-300 transition-colors"
-                >
-                  Mark all read
-                </button>
-                <button
-                  onClick={() => setNotificationDrawerOpen(false)}
-                  className="p-1.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
-                >
-                  <X size={16} />
-                </button>
-              </div>
+              <button onClick={() => setNotificationDrawerOpen(false)}
+                className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                <X size={16} />
+              </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {/* Notifications List */}
+            <div className="flex-1 overflow-y-auto no-scrollbar p-3 space-y-2">
               {notifications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-40 text-slate-500">
-                  <Bell size={32} className="mb-3 opacity-30" />
-                  <span className="text-sm">No notifications</span>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Bell size={36} className="text-slate-700 mb-3" />
+                  <div className="text-slate-500 text-sm">No notifications yet</div>
+                  <div className="text-slate-700 text-xs mt-1">Start the simulation to see live alerts</div>
                 </div>
               ) : (
-                notifications.map((notif) => {
-                  const Icon = iconMap[notif.type] || Bell;
-                  const pStyle = priorityStyles[notif.priority] || priorityStyles.NORMAL;
-                  const iColor = iconColors[notif.priority] || 'text-info';
+                notifications.map((n, i) => {
+                  const cfg = getConfig(n.type);
+                  const Icon = cfg.icon;
                   return (
-                    <motion.div
-                      key={notif.id}
-                      layout
-                      initial={{ x: 30, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      exit={{ x: 30, opacity: 0 }}
-                      className={`relative p-3 rounded-xl bg-secondary/50 border-l-2 ${pStyle} ${!notif.read ? 'border border-white/5' : 'opacity-60'}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`mt-0.5 ${iColor}`}>
-                          <Icon size={15} />
+                    <motion.div key={n.id}
+                      initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
+                      className={`p-3 rounded-xl border relative ${cfg.bg} ${cfg.border} ${!n.read ? 'border-l-2' : 'opacity-60'}`}
+                      style={!n.read ? { borderLeftColor: cfg.color } : {}}>
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                          style={{ backgroundColor: `${cfg.color}20` }}>
+                          <Icon size={12} style={{ color: cfg.color }} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-sm font-semibold text-white truncate">{notif.title}</span>
-                            {!notif.read && <div className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />}
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="font-semibold text-white text-xs truncate">{n.title}</span>
+                            {n.priority === 'CRITICAL' && (
+                              <Badge variant="CRITICAL" className="flex-shrink-0" style={{ fontSize: '9px', padding: '1px 4px' }}>!</Badge>
+                            )}
                           </div>
-                          <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{notif.message}</p>
-                          <span className="text-xs text-slate-600 mt-1 block">{timeAgo(notif.timestamp)}</span>
+                          <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">{n.message}</p>
+                          <div className="flex items-center justify-between mt-1.5">
+                            <span className="text-xs text-slate-600">{timeAgo(n.timestamp)}</span>
+                            <button onClick={() => dismissNotification(n.id)}
+                              className="text-xs text-slate-600 hover:text-slate-400 transition-colors px-1.5 py-0.5 rounded hover:bg-white/5">
+                              Dismiss
+                            </button>
+                          </div>
                         </div>
-                        <button
-                          onClick={() => dismissNotification(notif.id)}
-                          className="text-slate-600 hover:text-slate-400 transition-colors flex-shrink-0"
-                        >
-                          <X size={13} />
-                        </button>
                       </div>
                     </motion.div>
                   );
                 })
               )}
             </div>
+
+            {/* Footer */}
+            {notifications.length > 0 && (
+              <div className="p-3 border-t border-white/8 flex-shrink-0">
+                <button onClick={() => notifications.forEach((n) => dismissNotification(n.id))}
+                  className="btn-ghost w-full justify-center text-xs py-2">
+                  Clear All Notifications
+                </button>
+              </div>
+            )}
           </motion.div>
         </>
       )}
